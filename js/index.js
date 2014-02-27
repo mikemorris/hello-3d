@@ -30,6 +30,7 @@ gl.useProgram(program);
 var positionLocation = gl.getAttribLocation(program, 'a_position');
 var colorLocation = gl.getAttribLocation(program, 'a_color');
 var matrixLocation = gl.getUniformLocation(program, 'u_matrix');
+var fudgeLocation = gl.getUniformLocation(program, 'u_fudge');
 
 // Bind colors to buffer.
 var colorBuffer = gl.createBuffer();
@@ -48,7 +49,7 @@ gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 setGeometry(gl);
 
 var translation = [45, 150, 0];
-var rotation = [degToRad(40), degToRad(25), degToRad(325)];
+var rotation = [degToRad(30), degToRad(10), degToRad(0)];
 var scale = [1, 1, 1];
 
 // Build the matrices.
@@ -68,6 +69,8 @@ matrix = libmatrix.matrixMultiply(matrix, projectionMatrix);
 
 // Set the matrix.
 gl.uniformMatrix4fv(matrixLocation, false, matrix);
+
+gl.uniform1f(fudgeLocation, 2);
 
 // Clear the canvas AND the depth buffer.
 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
