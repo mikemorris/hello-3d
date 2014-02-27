@@ -48,17 +48,20 @@ gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
 setGeometry(gl);
 
-var translation = [45, 150, 0];
-var rotation = [degToRad(30), degToRad(10), degToRad(0)];
+var fieldOfViewRadians = degToRad(60);
+var translation = [-150, 0, -360];
+var rotation = [degToRad(190), degToRad(40), degToRad(320)];
 var scale = [1, 1, 1];
 
 // Build the matrices.
-var projectionMatrix = libmatrix.make2DProjection(canvas.width, canvas.height, canvas.width);
+var aspect = canvas.width / canvas.height;
+var projectionMatrix = libmatrix.makePerspective(fieldOfViewRadians, aspect, 1, 2000);
 var translationMatrix = libmatrix.makeTranslation(translation[0], translation[1], translation[2]);
 var rotationXMatrix = libmatrix.makeXRotation(rotation[0]);
 var rotationYMatrix = libmatrix.makeYRotation(rotation[1]);
 var rotationZMatrix = libmatrix.makeZRotation(rotation[2]);
 var scaleMatrix = libmatrix.makeScale(scale[0], scale[1], scale[2]);
+var zToWMatrix = libmatrix.makeZToWMatrix(1);
 
 // Multiply the matrices.
 var matrix = libmatrix.matrixMultiply(scaleMatrix, rotationZMatrix);
@@ -66,11 +69,10 @@ matrix = libmatrix.matrixMultiply(matrix, rotationYMatrix);
 matrix = libmatrix.matrixMultiply(matrix, rotationXMatrix);
 matrix = libmatrix.matrixMultiply(matrix, translationMatrix);
 matrix = libmatrix.matrixMultiply(matrix, projectionMatrix);
+matrix = libmatrix.matrixMultiply(matrix, zToWMatrix);
 
 // Set the matrix.
 gl.uniformMatrix4fv(matrixLocation, false, matrix);
-
-gl.uniform1f(fudgeLocation, 2);
 
 // Clear the canvas AND the depth buffer.
 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

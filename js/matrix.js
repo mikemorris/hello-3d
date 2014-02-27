@@ -53,6 +53,15 @@ module.exports = {
     ];
   },
 
+  makeZToWMatrix: function(fudge) {
+    return [
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, fudge,
+      0, 0, 0, 1
+    ];
+  },
+
   make2DProjection: function(width, height, depth) {
     // This flips the Y axis so 0 is at top.
     return [
@@ -60,6 +69,18 @@ module.exports = {
       0, -2 / height, 0, 0,
       0, 0, 2 / depth, 0,
       -1, 1, 0, 1
+    ];
+  },
+
+  makePerspective: function(fieldOfViewInRadians, aspect, near, far) {
+    var f = Math.tan(Math.PI * 0.5 - 0.5 * fieldOfViewInRadians);
+    var rangeInv = 1.0 / (near - far);
+
+    return [
+      f / aspect, 0, 0, 0,
+      0, f, 0, 0,
+      0, 0, (near + far) * rangeInv, -1,
+      0, 0, near * far * rangeInv * 2, 0
     ];
   },
 
