@@ -9,7 +9,6 @@ var gl = canvas.getContext('webgl');
 
 // Don't draw back-facing triangles.
 gl.enable(gl.CULL_FACE);
-
 gl.enable(gl.DEPTH_TEST);
 
 var vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -49,36 +48,47 @@ gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 setGeometry(gl);
 
 var fieldOfViewRadians = degToRad(60);
-var translation = [-150, 0, -360];
-var rotation = [degToRad(190), degToRad(40), degToRad(320)];
-var scale = [1, 1, 1];
+var cameraAngleRadians = degToRad(40);
 
-// Build the matrices.
-var aspect = canvas.width / canvas.height;
-var projectionMatrix = libmatrix.makePerspective(fieldOfViewRadians, aspect, 1, 2000);
-var translationMatrix = libmatrix.makeTranslation(translation[0], translation[1], translation[2]);
-var rotationXMatrix = libmatrix.makeXRotation(rotation[0]);
-var rotationYMatrix = libmatrix.makeYRotation(rotation[1]);
-var rotationZMatrix = libmatrix.makeZRotation(rotation[2]);
-var scaleMatrix = libmatrix.makeScale(scale[0], scale[1], scale[2]);
-var zToWMatrix = libmatrix.makeZToWMatrix(1);
+drawScene();
 
-// Multiply the matrices.
-var matrix = libmatrix.matrixMultiply(scaleMatrix, rotationZMatrix);
-matrix = libmatrix.matrixMultiply(matrix, rotationYMatrix);
-matrix = libmatrix.matrixMultiply(matrix, rotationXMatrix);
-matrix = libmatrix.matrixMultiply(matrix, translationMatrix);
-matrix = libmatrix.matrixMultiply(matrix, projectionMatrix);
-matrix = libmatrix.matrixMultiply(matrix, zToWMatrix);
+function drawScene() {
+  var numFs = 5;
+  var radius = 200;
 
-// Set the matrix.
-gl.uniformMatrix4fv(matrixLocation, false, matrix);
+  // Clear the canvas AND the depth buffer.
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-// Clear the canvas AND the depth buffer.
-gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  // Compute the projection matrix.
+  var aspect = canvas.width / canvas.height;
+  var projectionMatrix = libmatrix.makePerspective(fieldOfViewRadians, aspect, 1, 2000);
 
-// Draw the rectangle.
-gl.drawArrays(gl.TRIANGLES, 0, 16 * 6);
+  // Compute the camera's matrix.
+  var cameraMatrix = libmatrix.makeTranslation(0, 0, radius * 1.5);
+  cameraMatrix = libmatrix.matrixMultiply(cameraMatrix, libmatrix.makeYRotation(cameraAngleRadians));
+
+  var viewMatrix = libmatrix.makeInverse(cameraMatrix);
+
+  // Draw Fs in a circle.
+  for (var i = 0; i < numFs; i++) {
+    var angle = i * Math.PI * 2 / numFs;
+
+    var x = Math.cos(angle) * radius;
+    var z = Math.sin(angle) * radius;
+    var translationMatrix = libmatrix.makeTranslation(x, 0, z);
+
+    // Multiply the matrices.
+    var matrix = translationMatrix;
+    matrix = libmatrix.matrixMultiply(matrix, viewMatrix);
+    matrix = libmatrix.matrixMultiply(matrix, projectionMatrix);
+
+    // Set the matrix.
+    gl.uniformMatrix4fv(matrixLocation, false, matrix);
+
+    // Draw the rectangle.
+    gl.drawArrays(gl.TRIANGLES, 0, 16 * 6);
+  }
+}
 
 function degToRad(d) {
   return d * Math.PI / 180;
@@ -221,136 +231,146 @@ function setColors(gl) {
 
 // Fill the buffer with the values that define a letter 'F'.
 function setGeometry(gl) {
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      // left column front
-      0,   0,  0,
-      0, 150,  0,
-      30,   0,  0,
-      0, 150,  0,
-      30, 150,  0,
-      30,   0,  0,
+  var positions = new Float32Array([
+    // left column front
+    0,   0,  0,
+    0, 150,  0,
+    30,   0,  0,
+    0, 150,  0,
+    30, 150,  0,
+    30,   0,  0,
 
-      // top rung front
-      30,   0,  0,
-      30,  30,  0,
-      100,   0,  0,
-      30,  30,  0,
-      100,  30,  0,
-      100,   0,  0,
+    // top rung front
+    30,   0,  0,
+    30,  30,  0,
+    100,   0,  0,
+    30,  30,  0,
+    100,  30,  0,
+    100,   0,  0,
 
-      // middle rung front
-      30,  60,  0,
-      30,  90,  0,
-      67,  60,  0,
-      30,  90,  0,
-      67,  90,  0,
-      67,  60,  0,
+    // middle rung front
+    30,  60,  0,
+    30,  90,  0,
+    67,  60,  0,
+    30,  90,  0,
+    67,  90,  0,
+    67,  60,  0,
 
-      // left column back
-        0,   0,  30,
-       30,   0,  30,
-        0, 150,  30,
-        0, 150,  30,
-       30,   0,  30,
-       30, 150,  30,
-
-      // top rung back
-       30,   0,  30,
-      100,   0,  30,
-       30,  30,  30,
-       30,  30,  30,
-      100,   0,  30,
-      100,  30,  30,
-
-      // middle rung back
-       30,  60,  30,
-       67,  60,  30,
-       30,  90,  30,
-       30,  90,  30,
-       67,  60,  30,
-       67,  90,  30,
-
-      // top
-        0,   0,   0,
-      100,   0,   0,
-      100,   0,  30,
-        0,   0,   0,
-      100,   0,  30,
-        0,   0,  30,
-
-      // top rung front
-      100,   0,   0,
-      100,  30,   0,
-      100,  30,  30,
-      100,   0,   0,
-      100,  30,  30,
-      100,   0,  30,
-
-      // under top rung
-      30,   30,   0,
-      30,   30,  30,
-      100,  30,  30,
-      30,   30,   0,
-      100,  30,  30,
-      100,  30,   0,
-
-      // between top rung and middle
-      30,   30,   0,
-      30,   60,  30,
-      30,   30,  30,
-      30,   30,   0,
-      30,   60,   0,
-      30,   60,  30,
-
-      // top of middle rung
-      30,   60,   0,
-      67,   60,  30,
-      30,   60,  30,
-      30,   60,   0,
-      67,   60,   0,
-      67,   60,  30,
-
-      // front of middle rung
-      67,   60,   0,
-      67,   90,  30,
-      67,   60,  30,
-      67,   60,   0,
-      67,   90,   0,
-      67,   90,  30,
-
-      // bottom of middle rung.
-      30,   90,   0,
-      30,   90,  30,
-      67,   90,  30,
-      30,   90,   0,
-      67,   90,  30,
-      67,   90,   0,
-
-      // front of bottom
-      30,   90,   0,
-      30,  150,  30,
-      30,   90,  30,
-      30,   90,   0,
-      30,  150,   0,
-      30,  150,  30,
-
-      // bottom
-      0,   150,   0,
-      0,   150,  30,
-      30,  150,  30,
-      0,   150,   0,
-      30,  150,  30,
-      30,  150,   0,
-
-      // left side
-      0,   0,   0,
+    // left column back
       0,   0,  30,
+     30,   0,  30,
       0, 150,  30,
+      0, 150,  30,
+     30,   0,  30,
+     30, 150,  30,
+
+    // top rung back
+     30,   0,  30,
+    100,   0,  30,
+     30,  30,  30,
+     30,  30,  30,
+    100,   0,  30,
+    100,  30,  30,
+
+    // middle rung back
+     30,  60,  30,
+     67,  60,  30,
+     30,  90,  30,
+     30,  90,  30,
+     67,  60,  30,
+     67,  90,  30,
+
+    // top
       0,   0,   0,
-      0, 150,  30,
-      0, 150,   0
-    ]),
-    gl.STATIC_DRAW);
+    100,   0,   0,
+    100,   0,  30,
+      0,   0,   0,
+    100,   0,  30,
+      0,   0,  30,
+
+    // top rung front
+    100,   0,   0,
+    100,  30,   0,
+    100,  30,  30,
+    100,   0,   0,
+    100,  30,  30,
+    100,   0,  30,
+
+    // under top rung
+    30,   30,   0,
+    30,   30,  30,
+    100,  30,  30,
+    30,   30,   0,
+    100,  30,  30,
+    100,  30,   0,
+
+    // between top rung and middle
+    30,   30,   0,
+    30,   60,  30,
+    30,   30,  30,
+    30,   30,   0,
+    30,   60,   0,
+    30,   60,  30,
+
+    // top of middle rung
+    30,   60,   0,
+    67,   60,  30,
+    30,   60,  30,
+    30,   60,   0,
+    67,   60,   0,
+    67,   60,  30,
+
+    // front of middle rung
+    67,   60,   0,
+    67,   90,  30,
+    67,   60,  30,
+    67,   60,   0,
+    67,   90,   0,
+    67,   90,  30,
+
+    // bottom of middle rung.
+    30,   90,   0,
+    30,   90,  30,
+    67,   90,  30,
+    30,   90,   0,
+    67,   90,  30,
+    67,   90,   0,
+
+    // front of bottom
+    30,   90,   0,
+    30,  150,  30,
+    30,   90,  30,
+    30,   90,   0,
+    30,  150,   0,
+    30,  150,  30,
+
+    // bottom
+    0,   150,   0,
+    0,   150,  30,
+    30,  150,  30,
+    0,   150,   0,
+    30,  150,  30,
+    30,  150,   0,
+
+    // left side
+    0,   0,   0,
+    0,   0,  30,
+    0, 150,  30,
+    0,   0,   0,
+    0, 150,  30,
+    0, 150,   0
+  ]);
+
+  // Fix positions for 3D space (Y flip).
+  var matrix = libmatrix.makeTranslation(-50, -75, -15);
+  matrix = libmatrix.matrixMultiply(matrix, libmatrix.makeXRotation(Math.PI));
+
+  for (var ii = 0; ii < positions.length; ii += 3) {
+    var vector = libmatrix.matrixVectorMultiply([positions[ii + 0], positions[ii + 1], positions[ii + 2], 1], matrix);
+    positions[ii + 0] = vector[0];
+    positions[ii + 1] = vector[1];
+    positions[ii + 2] = vector[2];
+  }
+
+  gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
 }
