@@ -48,7 +48,7 @@ gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 setGeometry(gl);
 
 var fieldOfViewRadians = degToRad(60);
-var cameraAngleRadians = degToRad(40);
+var cameraAngleRadians = degToRad(70);
 
 drawScene();
 
@@ -63,9 +63,23 @@ function drawScene() {
   var aspect = canvas.width / canvas.height;
   var projectionMatrix = libmatrix.makePerspective(fieldOfViewRadians, aspect, 1, 2000);
 
-  // Compute the camera's matrix.
+  // Compute the position of the first F.
+  var fPosition = [radius, 0, 0];
+
+  // Use matrix math to compute a position on the sphere.
   var cameraMatrix = libmatrix.makeTranslation(0, 0, radius * 1.5);
   cameraMatrix = libmatrix.matrixMultiply(cameraMatrix, libmatrix.makeYRotation(cameraAngleRadians));
+
+  // Get the camera's position from the matrix.
+  cameraPosition = [
+    cameraMatrix[12],
+    cameraMatrix[13],
+    cameraMatrix[14]];
+
+  var up = [0, 1, 0];
+
+  // Compute the camera's matrix.
+  cameraMatrix = libmatrix.makeLookAt(cameraPosition, fPosition, up);
 
   var viewMatrix = libmatrix.makeInverse(cameraMatrix);
 
